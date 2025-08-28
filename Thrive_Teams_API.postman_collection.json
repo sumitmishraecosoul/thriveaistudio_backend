@@ -1,0 +1,350 @@
+{
+	"info": {
+		"_postman_id": "thrive-teams-api-collection",
+		"name": "Thrive Teams API",
+		"description": "Collection for testing Thrive Teams Meeting API endpoints with Azure AD integration. Both endpoints create real Teams meetings and send custom emails to all attendees.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						""
+					]
+				},
+				"description": "Test if the server is running and responding. Returns available endpoints."
+			},
+			"response": []
+		},
+		{
+			"name": "Test Permissions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/test-permissions",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"test-permissions"
+					]
+				},
+				"description": "Test Azure AD permissions to verify that the application can access user data and create meetings. Check server logs for detailed permission test results."
+			},
+			"response": []
+		},
+		{
+			"name": "Schedule Discovery Call",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"selectedDate\": \"2025-08-28\",\n  \"selectedTime\": \"10:00\",\n  \"userDetails\": {\n    \"firstName\": \"Sanjay\",\n    \"lastName\": \"Jana\",\n    \"email\": \"Sanjay.Jana@thrivebrands.ai\",\n    \"companyName\": \"Test Company\",\n    \"revenue\": \"500,000 - 1M\"\n  },\n  \"organizerEmail\": \"{{organizerEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/schedule-discovery-call",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"schedule-discovery-call"
+					]
+				},
+				"description": "Schedule a 30-minute discovery call. Creates a Teams meeting and sends custom emails to all attendees. Organizer is managed internally (Admin or Swati). This endpoint is used by the frontend MeetingScheduler component."
+			},
+			"response": []
+		},
+		{
+			"name": "Create General Meeting",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"subject\": \"Project Discussion\",\n  \"startTime\": \"2025-08-28T10:00:00Z\",\n  \"endTime\": \"2025-08-28T11:00:00Z\",\n  \"attendees\": [\"Sanjay.Jana@thrivebrands.ai\", \"sumitmishraecosoul@gmail.com\"],\n  \"organizerEmail\": \"{{organizerEmail}}\",\n  \"userDetails\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"sumitmishraecosoul@gmail.com\"\n  }\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/create-meeting",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"create-meeting"
+					]
+				},
+				"description": "Create a general Teams meeting with custom parameters. Sends custom emails to all attendees and userDetails. Organizer is managed internally (Admin or Swati). More flexible than discovery call endpoint."
+			},
+			"response": []
+		},
+		{
+			"name": "Test Discovery Call - Different Time",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"selectedDate\": \"2025-08-29\",\n  \"selectedTime\": \"14:00\",\n  \"userDetails\": {\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Smith\",\n    \"email\": \"jane.smith@example.com\",\n    \"companyName\": \"Another Company\",\n    \"revenue\": \"1M - 5M\"\n  },\n  \"organizerEmail\": \"{{organizerEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/schedule-discovery-call",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"schedule-discovery-call"
+					]
+				},
+				"description": "Test discovery call with different time and user. Useful for testing multiple scenarios."
+			},
+			"response": []
+		},
+		{
+			"name": "Create Meeting - Multiple Attendees",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"subject\": \"Team Planning Session\",\n  \"startTime\": \"2025-08-30T15:00:00Z\",\n  \"endTime\": \"2025-08-30T16:30:00Z\",\n  \"attendees\": [\"govind.kumar@ecosoulhome.com\", \"sumit.mishra@ecosoulhome.com\", \"admin@thrivebrands.ai\"],\n  \"organizerEmail\": \"{{organizerEmail}}\",\n  \"userDetails\": {\n    \"firstName\": \"Project\",\n    \"lastName\": \"Manager\",\n    \"email\": \"project.manager@company.com\"\n  }\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/create-meeting",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"create-meeting"
+					]
+				},
+				"description": "Test creating a meeting with multiple attendees. All attendees will receive custom emails with the beautiful UI."
+			},
+			"response": []
+		},
+		{
+			"name": "Test Discovery Call - Swati as Organizer",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"selectedDate\": \"2025-08-29\",\n  \"selectedTime\": \"15:00\",\n  \"userDetails\": {\n    \"firstName\": \"Test\",\n    \"lastName\": \"User\",\n    \"email\": \"test.user@example.com\",\n    \"companyName\": \"Test Company\",\n    \"revenue\": \"500,000 - 1M\"\n  },\n  \"guestEmails\": [\"guest1@example.com\", \"guest2@example.com\"]\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/schedule-discovery-call",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"schedule-discovery-call"
+					]
+				},
+				"description": "Test discovery call with Swati as organizer. This request will use the internal organizer selection (Admin or Swati)."
+			},
+			"response": []
+		},
+		{
+			"name": "Check Availability (Deprecated)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-08-28&time=10:00",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-08-28"
+						},
+						{
+							"key": "time",
+							"value": "10:00"
+						}
+					]
+				},
+				"description": "Check if a specific time slot is available (Note: This endpoint may not be implemented yet)"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Log request details",
+					"console.log('Making request to:', pm.request.url);",
+					"console.log('Method:', pm.request.method);",
+					"if (pm.request.body && pm.request.body.mode === 'raw') {",
+					"    console.log('Body:', pm.request.body.raw);",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Test response",
+					"pm.test('Status code is 200', function () {",
+					"    pm.response.to.have.status(200);",
+					"});",
+					"",
+					"pm.test('Response has JSON body', function () {",
+					"    pm.response.to.be.json;",
+					"});",
+					"",
+					"// Log response for debugging",
+					"console.log('Response status:', pm.response.status);",
+					"console.log('Response body:', pm.response.text());",
+					"",
+					"// Additional tests for specific endpoints",
+					"if (pm.request.url.path.includes('schedule-discovery-call')) {",
+					"    pm.test('Discovery call response has success field', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('success');",
+					"    });",
+					"    ",
+					"    pm.test('Discovery call response has meeting details', function () {",
+					"        const response = pm.response.json();",
+					"        if (response.success) {",
+					"            pm.expect(response).to.have.property('meeting');",
+					"            pm.expect(response.meeting).to.have.property('joinUrl');",
+					"            pm.expect(response.meeting).to.have.property('id');",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Discovery call creates real meeting (not mock)', function () {",
+					"        const response = pm.response.json();",
+					"        if (response.success && response.meeting) {",
+					"            // Check if it's a real Teams meeting URL",
+					"            pm.expect(response.meeting.joinUrl).to.include('teams.microsoft.com');",
+					"            pm.expect(response.meeting.joinUrl).to.not.include('mock-tenant');",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Discovery call sends emails to all attendees', function () {",
+					"        const response = pm.response.json();",
+					"        if (response.success) {",
+					"            pm.expect(response).to.have.property('emailSent');",
+					"            pm.expect(response).to.have.property('emailResults');",
+					"            pm.expect(response.emailResults).to.be.an('array');",
+					"        }",
+					"    });",
+					"}",
+					"",
+					"if (pm.request.url.path.includes('create-meeting')) {",
+					"    pm.test('Create meeting response has success field', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('success');",
+					"    });",
+					"    ",
+					"    pm.test('Create meeting response has meeting details', function () {",
+					"        const response = pm.response.json();",
+					"        if (response.success) {",
+					"            pm.expect(response).to.have.property('meeting');",
+					"            pm.expect(response.meeting).to.have.property('onlineMeeting');",
+					"            pm.expect(response.meeting.onlineMeeting).to.have.property('joinUrl');",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Create meeting creates real Teams meeting', function () {",
+					"        const response = pm.response.json();",
+					"        if (response.success && response.meeting && response.meeting.onlineMeeting) {",
+					"            // Check if it's a real Teams meeting URL",
+					"            pm.expect(response.meeting.onlineMeeting.joinUrl).to.include('teams.microsoft.com');",
+					"            pm.expect(response.meeting.onlineMeeting.joinUrl).to.not.include('mock-tenant');",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Create meeting sends emails to all attendees', function () {",
+					"        const response = pm.response.json();",
+					"        if (response.success) {",
+					"            pm.expect(response).to.have.property('emailSent');",
+					"            pm.expect(response).to.have.property('emailResults');",
+					"            pm.expect(response.emailResults).to.be.an('array');",
+					"        }",
+					"    });",
+					"}",
+					"",
+					"if (pm.request.url.path.includes('test-permissions')) {",
+					"    pm.test('Permissions test completed successfully', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('success');",
+					"        pm.expect(response).to.have.property('message');",
+					"    });",
+					"}",
+					"",
+					"if (pm.request.url.path.includes('check-availability')) {",
+					"    pm.test('Availability response has available field', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('available');",
+					"    });",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "organizerEmail",
+			"value": "admin@thrivebrands.ai",
+			"type": "string",
+			"description": "Organizer email from .env file. Options: admin@thrivebrands.ai or Swati.Nawani@thrivebrands.ai"
+		}
+	]
+}
+
