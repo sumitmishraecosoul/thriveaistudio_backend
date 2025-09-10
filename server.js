@@ -1443,15 +1443,24 @@ app.get("/api/available-slots", async (req, res) => {
     
     // Generate all possible time slots (9 AM to 5:30 PM, 30-minute intervals)
     const timeSlots = [];
+    
+    // Get current time in Noida timezone for proper comparison
     const now = new Date();
+    const currentDate = now.toLocaleDateString('en-CA', { timeZone: noidaTimezone }); // YYYY-MM-DD format
+    const currentTime = now.toLocaleTimeString('en-GB', { timeZone: noidaTimezone, hour12: false }); // HH:MM format
+    
+    // Check if the requested date is today
+    const isToday = date === currentDate;
     
     for (let hour = 9; hour < 18; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        const slotDateTime = new Date(`${date}T${slotTime}:00`);
         
-        // Check if slot is in the past
-        const isPast = slotDateTime <= now;
+        // Check if slot is in the past (only for today's date)
+        let isPast = false;
+        if (isToday) {
+          isPast = slotTime <= currentTime;
+        }
         
         // Check if slot is already booked
         const isBooked = await isSlotBooked(date, slotTime);
@@ -1554,9 +1563,19 @@ app.get("/api/check-availability", async (req, res) => {
     // Check if it's within business hours
     const isBusinessHours = hour >= 9 && hour < 18;
     
-    // Check if it's not in the past
+    // Check if it's not in the past (timezone-aware comparison)
     const now = new Date();
-    const isFuture = selectedDateTime > now;
+    const currentDate = now.toLocaleDateString('en-CA', { timeZone: noidaTimezone }); // YYYY-MM-DD format
+    const currentTime = now.toLocaleTimeString('en-GB', { timeZone: noidaTimezone, hour12: false }); // HH:MM format
+    
+    let isFuture = true;
+    if (date === currentDate) {
+      // For today's date, compare times directly
+      isFuture = time24h > currentTime;
+    } else {
+      // For future dates, it's always future
+      isFuture = date > currentDate;
+    }
     
     // Check if slot is already booked
     const isBooked = await isSlotBooked(date, time24h);
