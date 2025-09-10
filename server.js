@@ -1459,13 +1459,11 @@ app.get("/api/available-slots", async (req, res) => {
         // Slot is available if it's not in the past and not booked
         const isAvailable = !isPast && !isBooked;
         
-        // Convert to 12-hour format for display
-        const displayTime = slotDateTime.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: noidaTimezone
-        });
+        // Convert to 12-hour format for display (manual conversion to avoid timezone issues)
+        const [hours, minutes] = slotTime.split(':');
+        const hour12 = parseInt(hours) % 12 || 12;
+        const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+        const displayTime = `${hour12}:${minutes} ${ampm}`;
         
         // Determine reason for availability status
         let reason = 'Available';
