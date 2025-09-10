@@ -204,3 +204,4 @@ Once deployed, your API will be:
 - ✅ SSL secured
 
 Your Thrive Teams Backend is now live and ready to serve your frontend application!
+

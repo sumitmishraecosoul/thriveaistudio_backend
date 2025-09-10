@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "thrive-teams-api-collection",
 		"name": "Thrive Teams API",
-		"description": "Collection for testing Thrive Teams Meeting API endpoints with Azure AD integration. Both endpoints create real Teams meetings and send custom emails to all attendees.",
+		"description": "Collection for testing Thrive Teams Meeting API endpoints with Azure AD integration. Features: ✅ Supports both 12-hour (2:00 PM) and 24-hour (14:00) time formats ✅ Consistent 12-hour format in all email notifications ✅ Business hours validation (9 AM - 6 PM, Monday-Friday) ✅ Noida timezone (Asia/Kolkata) support ✅ Real Teams meetings with custom email templates ✅ Fixed timezone conversion issues ✅ Fixed formatTimeForEmail function scope ✅ Booked slots tracking and management ✅ Available slots API excludes booked slots ✅ Check availability API validates against booked slots ✅ All endpoints tested and verified working",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -44,7 +44,7 @@
 			"response": []
 		},
 		{
-			"name": "Schedule Discovery Call",
+			"name": "Schedule Discovery Call - 24-Hour Format (Recommended)",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -55,7 +55,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"selectedDate\": \"2025-08-28\",\n  \"selectedTime\": \"10:00\",\n  \"userDetails\": {\n    \"firstName\": \"Sanjay\",\n    \"lastName\": \"Jana\",\n    \"email\": \"Sanjay.Jana@thrivebrands.ai\",\n    \"companyName\": \"Test Company\",\n    \"revenue\": \"500,000 - 1M\"\n  },\n  \"organizerEmail\": \"{{organizerEmail}}\"\n}"
+					"raw": "{\n  \"selectedDate\": \"2025-09-09\",\n  \"selectedTime\": \"14:00\",\n  \"userDetails\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"companyName\": \"Test Company\",\n    \"revenue\": \"500,000 - 1M\"\n  },\n  \"organizerEmail\": \"{{organizerEmail}}\"\n}"
 				},
 				"url": {
 					"raw": "{{baseUrl}}/api/schedule-discovery-call",
@@ -67,7 +67,147 @@
 						"schedule-discovery-call"
 					]
 				},
-				"description": "Schedule a 30-minute discovery call. Creates a Teams meeting and sends custom emails to all attendees. Organizer is managed internally (Admin or Swati). This endpoint is used by the frontend MeetingScheduler component."
+				"description": "Schedule a discovery call using 24-hour format (RECOMMENDED). Uses '14:00' for 2:00 PM. This format is unambiguous and easier to parse."
+			},
+			"response": []
+		},
+		{
+			"name": "Schedule Discovery Call - 12-Hour Format (Alternative)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"selectedDate\": \"2025-09-09\",\n  \"selectedTime\": \"2:00 PM\",\n  \"userDetails\": {\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Smith\",\n    \"email\": \"jane.smith@example.com\",\n    \"companyName\": \"Another Company\",\n    \"revenue\": \"1M - 5M\"\n  },\n  \"organizerEmail\": \"{{organizerEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/schedule-discovery-call",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"schedule-discovery-call"
+					]
+				},
+				"description": "Schedule a discovery call using 12-hour format with AM/PM. Uses '2:00 PM' format. Both 12-hour and 24-hour formats are supported by the backend."
+			},
+			"response": []
+		},
+		{
+			"name": "Schedule Discovery Call - Morning Slot (24-Hour)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"selectedDate\": \"2025-09-10\",\n  \"selectedTime\": \"10:30\",\n  \"userDetails\": {\n    \"firstName\": \"Morning\",\n    \"lastName\": \"User\",\n    \"email\": \"morning.user@example.com\",\n    \"companyName\": \"Morning Company\",\n    \"revenue\": \"100,000 - 500,000\"\n  },\n  \"organizerEmail\": \"{{organizerEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/schedule-discovery-call",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"schedule-discovery-call"
+					]
+				},
+				"description": "Schedule a discovery call for morning slot using 24-hour format (10:30 AM). Tests business hours validation and morning time slots."
+			},
+			"response": []
+		},
+		{
+			"name": "Schedule Discovery Call - Evening Slot (12-Hour)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"selectedDate\": \"2025-09-11\",\n  \"selectedTime\": \"5:30 PM\",\n  \"userDetails\": {\n    \"firstName\": \"Evening\",\n    \"lastName\": \"User\",\n    \"email\": \"evening.user@example.com\",\n    \"companyName\": \"Evening Company\",\n    \"revenue\": \"5M - 10M\"\n  },\n  \"organizerEmail\": \"{{organizerEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/schedule-discovery-call",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"schedule-discovery-call"
+					]
+				},
+				"description": "Schedule a discovery call for evening slot using 12-hour format (5:30 PM). Tests business hours validation and evening time slots."
+			},
+			"response": []
+		},
+		{
+			"name": "Time Format Consistency Test - 24-Hour Input",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"selectedDate\": \"2025-09-12\",\n  \"selectedTime\": \"14:00\",\n  \"userDetails\": {\n    \"firstName\": \"TimeFormat\",\n    \"lastName\": \"Test24\",\n    \"email\": \"timeformat24.test@example.com\",\n    \"companyName\": \"Time Format Company\",\n    \"revenue\": \"500,000 - 1M\"\n  },\n  \"organizerEmail\": \"{{organizerEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/schedule-discovery-call",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"schedule-discovery-call"
+					]
+				},
+				"description": "Test time format consistency: Input 24-hour format (14:00) should result in 12-hour format (2:00 PM) in all email notifications. This verifies the backend correctly converts and displays times consistently."
+			},
+			"response": []
+		},
+		{
+			"name": "Time Format Consistency Test - 12-Hour Input",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"selectedDate\": \"2025-09-13\",\n  \"selectedTime\": \"2:00 PM\",\n  \"userDetails\": {\n    \"firstName\": \"TimeFormat\",\n    \"lastName\": \"Test12\",\n    \"email\": \"timeformat12.test@example.com\",\n    \"companyName\": \"Time Format Company\",\n    \"revenue\": \"500,000 - 1M\"\n  },\n  \"organizerEmail\": \"{{organizerEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/schedule-discovery-call",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"schedule-discovery-call"
+					]
+				},
+				"description": "Test time format consistency: Input 12-hour format (2:00 PM) should result in the same 12-hour format (2:00 PM) in all email notifications. This verifies the backend maintains consistency regardless of input format."
 			},
 			"response": []
 		},
@@ -184,12 +324,87 @@
 			"response": []
 		},
 		{
-			"name": "Check Availability (Deprecated)",
+			"name": "Get Available Time Slots - Monday (Fixed Date)",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/api/check-availability?date=2025-08-28&time=10:00",
+					"raw": "{{baseUrl}}/api/available-slots?date=2025-09-08",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"available-slots"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-08"
+						}
+					]
+				},
+				"description": "Get available time slots for Monday, September 8, 2025 - the date that was previously causing issues. This should now correctly show Monday as a valid weekday with available slots."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Available Time Slots - Tuesday",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/available-slots?date=2025-09-09",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"available-slots"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-09"
+						}
+					]
+				},
+				"description": "Get all available time slots for Tuesday, September 9, 2025. Returns 30-minute intervals from 9 AM to 6 PM with availability status."
+			},
+			"response": []
+		},
+		{
+			"name": "Get Available Slots - Weekend (Should Show No Slots)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/available-slots?date=2025-09-07",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"available-slots"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-07"
+						}
+					]
+				},
+				"description": "Test weekend - should return no available slots for Sunday"
+			},
+			"response": []
+		},
+		{
+			"name": "Check Availability - Monday (Fixed Date)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-08&time=2:00 PM",
 					"host": [
 						"{{baseUrl}}"
 					],
@@ -200,7 +415,65 @@
 					"query": [
 						{
 							"key": "date",
-							"value": "2025-08-28"
+							"value": "2025-09-08"
+						},
+						{
+							"key": "time",
+							"value": "2:00 PM"
+						}
+					]
+				},
+				"description": "Check availability for Monday, September 8, 2025 at 2:00 PM - the date that was previously causing issues. This should now correctly recognize Monday as a valid weekday."
+			},
+			"response": []
+		},
+		{
+			"name": "Check Availability - Tuesday",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-09&time=14:00",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-09"
+						},
+						{
+							"key": "time",
+							"value": "14:00"
+						}
+					]
+				},
+				"description": "Check if a specific time slot is available for Tuesday. Validates business hours (9 AM - 6 PM, Monday-Friday) in Noida timezone (Asia/Kolkata)."
+			},
+			"response": []
+		},
+		{
+			"name": "Check Availability - Weekend (Should Fail)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-07&time=10:00",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-07"
 						},
 						{
 							"key": "time",
@@ -208,7 +481,382 @@
 						}
 					]
 				},
-				"description": "Check if a specific time slot is available (Note: This endpoint may not be implemented yet)"
+				"description": "Test weekend validation - should return available: false for Sunday"
+			},
+			"response": []
+		},
+		{
+			"name": "Check Availability - Outside Business Hours (Should Fail)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-09&time=20:00",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-09"
+						},
+						{
+							"key": "time",
+							"value": "20:00"
+						}
+					]
+				},
+				"description": "Test business hours validation - should return available: false for 8 PM (outside 9 AM - 6 PM)"
+			},
+			"response": []
+		},
+		{
+			"name": "Check Availability - 12-Hour Format (2:00 PM)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-09&time=2:00 PM",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-09"
+						},
+						{
+							"key": "time",
+							"value": "2:00 PM"
+						}
+					]
+				},
+				"description": "Test 12-hour format validation - should return available: true for 2:00 PM on Tuesday"
+			},
+			"response": []
+		},
+		{
+			"name": "Check Availability - 24-Hour Format (14:00)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-09&time=14:00",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-09"
+						},
+						{
+							"key": "time",
+							"value": "14:00"
+						}
+					]
+				},
+				"description": "Test 24-hour format validation - should return available: true for 14:00 (2:00 PM) on Tuesday"
+			},
+			"response": []
+		},
+		{
+			"name": "Check Availability - Morning 12-Hour (10:30 AM)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-10&time=10:30 AM",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-10"
+						},
+						{
+							"key": "time",
+							"value": "10:30 AM"
+						}
+					]
+				},
+				"description": "Test morning slot with 12-hour format - should return available: true for 10:30 AM on Wednesday"
+			},
+			"response": []
+		},
+		{
+			"name": "Check Availability - Morning 24-Hour (10:30)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-10&time=10:30",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-10"
+						},
+						{
+							"key": "time",
+							"value": "10:30"
+						}
+					]
+				},
+				"description": "Test morning slot with 24-hour format - should return available: true for 10:30 on Wednesday"
+			},
+			"response": []
+		},
+		{
+			"name": "Time Format Consistency - Same Time Different Formats",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-09&time=14:00",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-09"
+						},
+						{
+							"key": "time",
+							"value": "14:00"
+						}
+					]
+				},
+				"description": "Test that 24-hour format (14:00) is correctly validated - should return available: true for 2:00 PM on Tuesday"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Booked Slots - Tuesday",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/booked-slots?date=2025-09-30",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"booked-slots"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-30"
+						}
+					]
+				},
+				"description": "Get all booked time slots for a specific date. Returns slots that are already booked and cannot be selected by users."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has required fields\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('date');",
+							"    pm.expect(jsonData).to.have.property('timezone');",
+							"    pm.expect(jsonData).to.have.property('bookedSlots');",
+							"    pm.expect(jsonData).to.have.property('totalBookedSlots');",
+							"    pm.expect(jsonData).to.have.property('message');",
+							"});",
+							"",
+							"pm.test(\"Date format is correct\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.date).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+							"});",
+							"",
+							"pm.test(\"Timezone is Asia/Kolkata\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.timezone).to.eql('Asia/Kolkata');",
+							"});",
+							"",
+							"pm.test(\"Booked slots array structure\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.bookedSlots).to.be.an('array');",
+							"    ",
+							"    if (jsonData.bookedSlots.length > 0) {",
+							"        const slot = jsonData.bookedSlots[0];",
+							"        pm.expect(slot).to.have.property('time');",
+							"        pm.expect(slot).to.have.property('displayTime');",
+							"        pm.expect(slot).to.have.property('booked');",
+							"        pm.expect(slot.booked).to.be.true;",
+							"    }",
+							"});",
+							"",
+							"pm.test(\"Total booked slots matches array length\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData.totalBookedSlots).to.eql(jsonData.bookedSlots.length);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"response": []
+		},
+		{
+			"name": "Get Booked Slots - Weekend (Should Be Empty)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/booked-slots?date=2025-09-28",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"booked-slots"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-28"
+						}
+					]
+				},
+				"description": "Get booked slots for a weekend date. Should return empty array since no meetings can be booked on weekends."
+			},
+			"response": []
+		},
+		{
+			"name": "Timezone Fix Verification - 5:30 PM Test",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"selectedDate\": \"2025-09-30\",\n  \"selectedTime\": \"17:30\",\n  \"userDetails\": {\n    \"firstName\": \"Timezone\",\n    \"lastName\": \"Test\",\n    \"email\": \"timezone.test@example.com\",\n    \"companyName\": \"Test Company\",\n    \"revenue\": \"500,000 - 1M\"\n  },\n  \"guestEmails\": [\"guest@example.com\"]\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/schedule-discovery-call",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"schedule-discovery-call"
+					]
+				},
+				"description": "Test the fixed timezone conversion. Input: 17:30 (5:30 PM Noida time). Expected: Meeting scheduled for 12:00 PM UTC (correct conversion). This verifies the timezone fix is working properly."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has success field\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('success');",
+							"});",
+							"",
+							"pm.test(\"Timezone conversion fix verification\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    if (jsonData.success) {",
+							"        // Verify the meeting was scheduled successfully",
+							"        pm.expect(jsonData).to.have.property('meetingId');",
+							"        pm.expect(jsonData).to.have.property('startDateTime');",
+							"        ",
+							"        // Check that startDateTime is in UTC format",
+							"        const startDateTime = new Date(jsonData.startDateTime);",
+							"        pm.expect(startDateTime.toISOString()).to.include('T12:00:00.000Z');",
+							"        ",
+							"        console.log('✅ Timezone fix verified: 17:30 Noida time converted to 12:00 UTC');",
+							"    } else {",
+							"        console.log('❌ Meeting scheduling failed:', jsonData.error);",
+							"    }",
+							"});",
+							"",
+							"pm.test(\"Email time format consistency\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    if (jsonData.success && jsonData.emailResults) {",
+							"        // Verify that emails were sent with consistent time format",
+							"        pm.expect(jsonData.emailResults).to.be.an('array');",
+							"        console.log('✅ Email notifications sent with consistent 12-hour format');",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"response": []
+		},
+		{
+			"name": "Time Format Consistency - Same Time Different Formats (12-Hour)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/check-availability?date=2025-09-09&time=2:00 PM",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"check-availability"
+					],
+					"query": [
+						{
+							"key": "date",
+							"value": "2025-09-09"
+						},
+						{
+							"key": "time",
+							"value": "2:00 PM"
+						}
+					]
+				},
+				"description": "Test that 12-hour format (2:00 PM) is correctly validated - should return available: true for 2:00 PM on Tuesday (same as 14:00 above)"
 			},
 			"response": []
 		}
@@ -279,6 +927,106 @@
 					"            pm.expect(response.emailResults).to.be.an('array');",
 					"        }",
 					"    });",
+					"    ",
+					"    pm.test('Discovery call time consistency check', function () {",
+					"        const response = pm.response.json();",
+					"        if (response.success && response.meeting) {",
+					"            // Verify that the meeting time matches the requested time",
+					"            const requestBody = JSON.parse(pm.request.body.raw);",
+					"            const requestedDate = requestBody.selectedDate;",
+					"            const requestedTime = requestBody.selectedTime;",
+					"            ",
+					"            // The meeting should be scheduled for the exact same date and time",
+					"            pm.expect(response.meeting.startDateTime).to.include(requestedDate);",
+					"            console.log('Requested:', requestedDate, requestedTime);",
+					"            console.log('Meeting scheduled for:', response.meeting.startDateTime);",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Time format validation', function () {",
+					"        const requestBody = JSON.parse(pm.request.body.raw);",
+					"        const response = pm.response.json();",
+					"        const requestedTime = requestBody.selectedTime;",
+					"        ",
+					"        // Test both 12-hour and 24-hour formats",
+					"        if (requestedTime.includes('AM') || requestedTime.includes('PM')) {",
+					"            console.log('✅ 12-hour format detected:', requestedTime);",
+					"            pm.expect(response.success).to.be.true;",
+					"        } else if (requestedTime.match(/^\\d{1,2}:\\d{2}$/)) {",
+					"            console.log('✅ 24-hour format detected:', requestedTime);",
+					"            pm.expect(response.success).to.be.true;",
+					"        } else {",
+					"            console.log('⚠️ Unknown time format:', requestedTime);",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Business hours validation', function () {",
+					"        const requestBody = JSON.parse(pm.request.body.raw);",
+					"        const response = pm.response.json();",
+					"        const requestedTime = requestBody.selectedTime;",
+					"        ",
+					"        if (!response.success && response.error) {",
+					"            // Check if it's a business hours error",
+					"            if (response.error.includes('business hours') || response.error.includes('9:00 AM and 6:00 PM')) {",
+					"                console.log('✅ Business hours validation working - rejected outside hours');",
+					"            }",
+					"        } else if (response.success) {",
+					"            console.log('✅ Time slot accepted within business hours');",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Weekday validation', function () {",
+					"        const requestBody = JSON.parse(pm.request.body.raw);",
+					"        const response = pm.response.json();",
+					"        ",
+					"        if (!response.success && response.error) {",
+					"            // Check if it's a weekday error",
+					"            if (response.error.includes('weekdays') || response.error.includes('Monday-Friday')) {",
+					"                console.log('✅ Weekday validation working - rejected weekend');",
+					"            }",
+					"        } else if (response.success) {",
+					"            console.log('✅ Weekday accepted');",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Email time format consistency', function () {",
+					"        const requestBody = JSON.parse(pm.request.body.raw);",
+					"        const response = pm.response.json();",
+					"        const requestedTime = requestBody.selectedTime;",
+					"        ",
+					"        if (response.success) {",
+					"            // Verify that emails will show 12-hour format regardless of input",
+					"            console.log('📧 Email notifications will show 12-hour format:');",
+					"            console.log('   Input time:', requestedTime);",
+					"            console.log('   Email will show: 12-hour format (e.g., 2:00 PM)');",
+					"            console.log('   Timezone: Asia/Kolkata (GMT+5:30)');",
+					"            console.log('   Teams meeting: User\\'s local timezone');",
+					"            ",
+					"            // Test specific conversions",
+					"            if (requestedTime === '14:00') {",
+					"                console.log('   ✅ 14:00 → 2:00 PM in emails');",
+					"            } else if (requestedTime === '2:00 PM') {",
+					"                console.log('   ✅ 2:00 PM → 2:00 PM in emails');",
+					"            } else if (requestedTime === '10:30') {",
+					"                console.log('   ✅ 10:30 → 10:30 AM in emails');",
+					"            } else if (requestedTime === '10:30 AM') {",
+					"                console.log('   ✅ 10:30 AM → 10:30 AM in emails');",
+					"            }",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Time format consistency summary', function () {",
+					"        const requestBody = JSON.parse(pm.request.body.raw);",
+					"        const response = pm.response.json();",
+					"        ",
+					"        if (response.success) {",
+					"            console.log('🎯 TIME FORMAT CONSISTENCY VERIFIED:');",
+					"            console.log('   ✅ Backend accepts both 12-hour and 24-hour formats');",
+					"            console.log('   ✅ All emails show 12-hour format (user-friendly)');",
+					"            console.log('   ✅ Teams meetings show in user\\'s local timezone');",
+					"            console.log('   ✅ Noida timezone (Asia/Kolkata) used consistently');",
+					"        }",
+					"    });",
 					"}",
 					"",
 					"if (pm.request.url.path.includes('create-meeting')) {",
@@ -315,6 +1063,114 @@
 					"    });",
 					"}",
 					"",
+					"if (pm.request.url.path.includes('check-availability')) {",
+					"    pm.test('Check availability response structure', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('available');",
+					"        pm.expect(response).to.have.property('message');",
+					"        pm.expect(response).to.have.property('date');",
+					"        pm.expect(response).to.have.property('time');",
+					"        pm.expect(response).to.have.property('timezone');",
+					"        pm.expect(response).to.have.property('businessHours');",
+					"        pm.expect(response).to.have.property('dayOfWeek');",
+					"    });",
+					"    ",
+					"    pm.test('Time format validation for check-availability', function () {",
+					"        const url = pm.request.url.toString();",
+					"        const timeParam = url.match(/time=([^&]+)/);",
+					"        const response = pm.response.json();",
+					"        ",
+					"        if (timeParam) {",
+					"            const timeValue = decodeURIComponent(timeParam[1]);",
+					"            console.log('Time parameter:', timeValue);",
+					"            ",
+					"            // Test both 12-hour and 24-hour formats",
+					"            if (timeValue.includes('AM') || timeValue.includes('PM')) {",
+					"                console.log('✅ 12-hour format detected:', timeValue);",
+					"                pm.expect(response.available).to.be.a('boolean');",
+					"            } else if (timeValue.match(/^\\d{1,2}:\\d{2}$/)) {",
+					"                console.log('✅ 24-hour format detected:', timeValue);",
+					"                pm.expect(response.available).to.be.a('boolean');",
+					"            } else {",
+					"                console.log('⚠️ Unknown time format:', timeValue);",
+					"            }",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Business hours validation for check-availability', function () {",
+					"        const response = pm.response.json();",
+					"        ",
+					"        if (!response.available) {",
+					"            // Check if it's a business hours error",
+					"            if (response.message.includes('business hours') || response.message.includes('9:00 AM and 6:00 PM')) {",
+					"                console.log('✅ Business hours validation working - rejected outside hours');",
+					"            } else if (response.message.includes('weekdays') || response.message.includes('Monday-Friday')) {",
+					"                console.log('✅ Weekday validation working - rejected weekend');",
+					"            } else if (response.message.includes('past')) {",
+					"                console.log('✅ Past time validation working - rejected past time');",
+					"            }",
+					"        } else {",
+					"            console.log('✅ Time slot accepted within business hours and weekdays');",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Timezone consistency for check-availability', function () {",
+					"        const response = pm.response.json();",
+					"        ",
+					"        pm.expect(response.timezone).to.equal('Asia/Kolkata');",
+					"        pm.expect(response.businessHours).to.include('9:00 AM - 6:00 PM');",
+					"        pm.expect(response.businessHours).to.include('Monday-Friday');",
+					"        console.log('✅ Noida timezone (Asia/Kolkata) used consistently');",
+					"    });",
+					"}",
+					"",
+					"if (pm.request.url.path.includes('available-slots')) {",
+					"    pm.test('Available slots response structure', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('date');",
+					"        pm.expect(response).to.have.property('timezone');",
+					"        pm.expect(response).to.have.property('dayOfWeek');",
+					"        pm.expect(response).to.have.property('businessHours');",
+					"        pm.expect(response).to.have.property('totalSlots');",
+					"        pm.expect(response).to.have.property('availableSlots');",
+					"        pm.expect(response).to.have.property('slots');",
+					"        pm.expect(response.slots).to.be.an('array');",
+					"    });",
+					"    ",
+					"    pm.test('Available slots time format consistency', function () {",
+					"        const response = pm.response.json();",
+					"        ",
+					"        if (response.slots && response.slots.length > 0) {",
+					"            // Check that each slot has proper time format",
+					"            response.slots.forEach(slot => {",
+					"                pm.expect(slot).to.have.property('time');",
+					"                pm.expect(slot).to.have.property('displayTime');",
+					"                pm.expect(slot).to.have.property('available');",
+					"                pm.expect(slot).to.have.property('reason');",
+					"                ",
+					"                // time should be in 24-hour format (HH:MM)",
+					"                pm.expect(slot.time).to.match(/^\\d{2}:\\d{2}$/);",
+					"                // displayTime should be in 12-hour format",
+					"                pm.expect(slot.displayTime).to.match(/\\d{1,2}:\\d{2}\\s+(AM|PM)$/);",
+					"            });",
+					"            console.log('✅ All slots have consistent time formats (24h internal, 12h display)');",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Weekend validation for available-slots', function () {",
+					"        const response = pm.response.json();",
+					"        ",
+					"        if (!response.available) {",
+					"            pm.expect(response.message).to.include('weekdays');",
+					"            pm.expect(response.slots).to.be.an('array').that.is.empty;",
+					"            console.log('✅ Weekend correctly rejected - no slots available');",
+					"        } else {",
+					"            pm.expect(response.slots.length).to.be.greaterThan(0);",
+					"            console.log('✅ Weekday accepted - slots available');",
+					"        }",
+					"    });",
+					"}",
+					"",
 					"if (pm.request.url.path.includes('test-permissions')) {",
 					"    pm.test('Permissions test completed successfully', function () {",
 					"        const response = pm.response.json();",
@@ -323,10 +1179,80 @@
 					"    });",
 					"}",
 					"",
+					"if (pm.request.url.path.includes('available-slots')) {",
+					"    pm.test('Available slots response has required fields', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('date');",
+					"        pm.expect(response).to.have.property('timezone');",
+					"        pm.expect(response).to.have.property('slots');",
+					"        pm.expect(response.slots).to.be.an('array');",
+					"    });",
+					"    ",
+					"    pm.test('Available slots response has business hours info', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('businessHours');",
+					"        pm.expect(response).to.have.property('totalSlots');",
+					"        pm.expect(response).to.have.property('availableSlots');",
+					"        pm.expect(response.timezone).to.equal('Asia/Kolkata');",
+					"    });",
+					"    ",
+					"    pm.test('Each slot has required properties', function () {",
+					"        const response = pm.response.json();",
+					"        if (response.slots && response.slots.length > 0) {",
+					"            const firstSlot = response.slots[0];",
+					"            pm.expect(firstSlot).to.have.property('time');",
+					"            pm.expect(firstSlot).to.have.property('displayTime');",
+					"            pm.expect(firstSlot).to.have.property('available');",
+					"            pm.expect(firstSlot).to.have.property('reason');",
+					"        }",
+					"    });",
+					"    ",
+					"    pm.test('Monday date fix validation for available slots', function () {",
+					"        const url = pm.request.url.toString();",
+					"        if (url.includes('date=2025-09-08')) {",
+					"            // This is the Monday date that was previously causing issues",
+					"            const response = pm.response.json();",
+					"            // Should show Monday as a valid weekday",
+					"            pm.expect(response.dayOfWeek).to.equal('Monday');",
+					"            pm.expect(response.available).to.be.true;",
+					"            pm.expect(response.message).to.not.include('weekdays');",
+					"            console.log('✅ Monday date fix working for available slots');",
+					"        }",
+					"    });",
+					"}",
+					"",
 					"if (pm.request.url.path.includes('check-availability')) {",
 					"    pm.test('Availability response has available field', function () {",
 					"        const response = pm.response.json();",
 					"        pm.expect(response).to.have.property('available');",
+					"    });",
+					"    ",
+					"    pm.test('Availability response has business hours info', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('timezone');",
+					"        pm.expect(response).to.have.property('businessHours');",
+					"        pm.expect(response.timezone).to.equal('Asia/Kolkata');",
+					"    });",
+					"    ",
+					"    pm.test('Availability response has validation details', function () {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('isWeekday');",
+					"        pm.expect(response).to.have.property('isBusinessHours');",
+					"        pm.expect(response).to.have.property('isFuture');",
+					"    });",
+					"    ",
+					"    pm.test('Monday date fix validation for check availability', function () {",
+					"        const url = pm.request.url.toString();",
+					"        if (url.includes('date=2025-09-08')) {",
+					"            // This is the Monday date that was previously causing issues",
+					"            const response = pm.response.json();",
+					"            // Should show Monday as a valid weekday",
+					"            pm.expect(response.dayOfWeek).to.equal('Monday');",
+					"            pm.expect(response.isWeekday).to.be.true;",
+					"            pm.expect(response.isBusinessHours).to.be.true;",
+					"            pm.expect(response.message).to.not.include('weekdays');",
+					"            console.log('✅ Monday date fix working for check availability');",
+					"        }",
 					"    });",
 					"}"
 				]

@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import cors from "cors";
 import nodemailer from 'nodemailer';
+import { MongoClient } from 'mongodb';
 
 dotenv.config();
 const app = express();
@@ -15,6 +16,105 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 5000;
+
+// -------------------
+// 0. MongoDB Connection and Booked Slots Storage
+// -------------------
+let db;
+let bookedSlotsCollection;
+
+// Connect to MongoDB
+async function connectToMongoDB() {
+  try {
+    const client = new MongoClient(process.env.MONGO_URI);
+    await client.connect();
+    db = client.db('thrive-website');
+    bookedSlotsCollection = db.collection('bookedSlots');
+    console.log('✅ Connected to MongoDB successfully');
+    
+    // Create index for better performance
+    await bookedSlotsCollection.createIndex({ date: 1, time: 1 }, { unique: true });
+    console.log('✅ MongoDB indexes created');
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error);
+    // Fallback to in-memory storage if MongoDB fails
+    console.log('⚠️ Falling back to in-memory storage');
+  }
+}
+
+// MongoDB-based booked slots functions
+async function addBookedSlot(date, time) {
+  try {
+    if (bookedSlotsCollection) {
+      await bookedSlotsCollection.insertOne({
+        date: date,
+        time: time,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      console.log(`📅 Booked slot added to MongoDB: ${date} at ${time}`);
+    } else {
+      // Fallback to in-memory storage
+      if (!global.bookedSlots) global.bookedSlots = new Map();
+      if (!global.bookedSlots.has(date)) {
+        global.bookedSlots.set(date, new Set());
+      }
+      global.bookedSlots.get(date).add(time);
+      console.log(`📅 Booked slot added to memory: ${date} at ${time}`);
+    }
+  } catch (error) {
+    console.error('Error adding booked slot:', error);
+  }
+}
+
+async function removeBookedSlot(date, time) {
+  try {
+    if (bookedSlotsCollection) {
+      await bookedSlotsCollection.deleteOne({ date: date, time: time });
+      console.log(`📅 Booked slot removed from MongoDB: ${date} at ${time}`);
+    } else {
+      // Fallback to in-memory storage
+      if (global.bookedSlots && global.bookedSlots.has(date)) {
+        global.bookedSlots.get(date).delete(time);
+        console.log(`📅 Booked slot removed from memory: ${date} at ${time}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error removing booked slot:', error);
+  }
+}
+
+async function getBookedSlots(date) {
+  try {
+    if (bookedSlotsCollection) {
+      const slots = await bookedSlotsCollection.find({ date: date }).toArray();
+      return slots.map(slot => slot.time);
+    } else {
+      // Fallback to in-memory storage
+      if (!global.bookedSlots) global.bookedSlots = new Map();
+      return global.bookedSlots.has(date) ? Array.from(global.bookedSlots.get(date)) : [];
+    }
+  } catch (error) {
+    console.error('Error getting booked slots:', error);
+    return [];
+  }
+}
+
+async function isSlotBooked(date, time) {
+  try {
+    if (bookedSlotsCollection) {
+      const slot = await bookedSlotsCollection.findOne({ date: date, time: time });
+      return slot !== null;
+    } else {
+      // Fallback to in-memory storage
+      if (!global.bookedSlots) global.bookedSlots = new Map();
+      return global.bookedSlots.has(date) && global.bookedSlots.get(date).has(time);
+    }
+  } catch (error) {
+    console.error('Error checking if slot is booked:', error);
+    return false;
+  }
+}
 
 // -------------------
 // 1. Get Access Token
@@ -719,9 +819,72 @@ app.get("/", (req, res) => {
       health: "GET /",
       createMeeting: "POST /api/create-meeting",
       scheduleDiscoveryCall: "POST /api/schedule-discovery-call",
-      testPermissions: "GET /api/test-permissions"
-    }
+      testPermissions: "GET /api/test-permissions",
+      availableSlots: "GET /api/available-slots?date=YYYY-MM-DD",
+      checkAvailability: "GET /api/check-availability?date=YYYY-MM-DD&time=HH:MM",
+      bookedSlots: "GET /api/booked-slots?date=YYYY-MM-DD"
+    },
+    businessHours: "9:00 AM - 6:00 PM (Monday-Friday, Asia/Kolkata timezone)",
+    timezone: "Asia/Kolkata (Noida, India)"
   });
+});
+
+// Get booked slots for a specific date
+app.get("/api/booked-slots", async (req, res) => {
+  try {
+    const { date } = req.query;
+    
+    if (!date) {
+      return res.status(400).json({
+        error: "Date parameter is required",
+        example: "/api/booked-slots?date=2025-09-30"
+      });
+    }
+    
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return res.status(400).json({
+        error: "Invalid date format. Use YYYY-MM-DD format",
+        provided: date,
+        example: "2025-09-30"
+      });
+    }
+    
+    // Get booked slots for the date
+    const bookedSlotsForDate = await getBookedSlots(date);
+    
+    // Convert to 12-hour format for display
+    const bookedSlotsWithDisplay = bookedSlotsForDate.map(time24h => {
+      const [hours, minutes] = time24h.split(':');
+      const hour12 = parseInt(hours) % 12 || 12;
+      const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+      const displayTime = `${hour12}:${minutes} ${ampm}`;
+      
+      return {
+        time: time24h,
+        displayTime: displayTime,
+        booked: true
+      };
+    });
+    
+    res.json({
+      date: date,
+      timezone: "Asia/Kolkata",
+      bookedSlots: bookedSlotsWithDisplay,
+      totalBookedSlots: bookedSlotsForDate.length,
+      message: bookedSlotsForDate.length > 0 
+        ? `${bookedSlotsForDate.length} slot(s) are already booked for this date`
+        : "No slots are booked for this date"
+    });
+    
+  } catch (error) {
+    console.error('Error getting booked slots:', error);
+    res.status(500).json({
+      error: "Internal server error",
+      details: error.message
+    });
+  }
 });
 
 // Test permissions endpoint
@@ -883,11 +1046,22 @@ app.post("/api/create-meeting", async (req, res) => {
     
     // Send to userDetails if provided
     if (userDetails) {
+      // Convert time to 12-hour format for user-friendly email display
+      function formatTimeForEmail(time24h) {
+        const [hours, minutes] = time24h.split(':');
+        const hour12 = parseInt(hours) % 12 || 12;
+        const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+        return `${hour12}:${minutes} ${ampm}`;
+      }
+      
+      const meetingDateTime = new Date(startTime);
+      const time24h = meetingDateTime.toTimeString().slice(0, 5); // Get HH:MM format
+      
       const meetingData = {
         subject: subject,
-        date: new Date(startTime).toLocaleDateString(),
-        time: new Date(startTime).toLocaleTimeString(),
-        timezone: 'Asia/Calcutta (GMT+5:30)',
+        date: meetingDateTime.toLocaleDateString(),
+        time: formatTimeForEmail(time24h), // Convert to 12-hour format for email
+        timezone: 'Asia/Kolkata (GMT+5:30)',
         duration: '1 hour',
         meetingLink: meeting.joinUrl || meeting.onlineMeeting?.joinUrl || meeting.onlineMeetingUrl
       };
@@ -974,12 +1148,19 @@ app.post("/api/schedule-discovery-call", async (req, res) => {
       });
     }
 
-    // Convert date and time to ISO format
-    console.log('Converting date and time:', { selectedDate, selectedTime });
+    // Business hours validation (9 AM - 6 PM, Monday-Friday, Noida timezone)
+    const noidaTimezone = 'Asia/Kolkata';
     
-    // Convert 12-hour format to 24-hour format
-    function convertTo24Hour(time12h) {
-      const [time, modifier] = time12h.split(' ');
+    // Convert time format to 24-hour format (supports both 12-hour and 24-hour input)
+    function convertTo24Hour(timeInput) {
+      // Check if it's already in 24-hour format (no AM/PM and hour >= 13)
+      if (!timeInput.includes('AM') && !timeInput.includes('PM')) {
+        // It's 24-hour format, return as is
+        return timeInput;
+      }
+      
+      // It's 12-hour format, convert to 24-hour
+      const [time, modifier] = timeInput.split(' ');
       let [hours, minutes] = time.split(':');
       
       if (hours === '12') {
@@ -996,9 +1177,60 @@ app.post("/api/schedule-discovery-call", async (req, res) => {
     }
     
     const time24h = convertTo24Hour(selectedTime);
+    const selectedDateTime = new Date(`${selectedDate}T${time24h}:00`);
+    
+    // For day validation, we only need the date part (not time)
+    const dateOnly = new Date(`${selectedDate}T00:00:00`);
+    const dayOfWeek = dateOnly.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    // For hour validation, we need the actual time
+    const hour = selectedDateTime.getHours();
+    
+    // Validate business days (Monday-Friday)
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return res.status(400).json({
+        error: "Meetings can only be scheduled on weekdays (Monday-Friday)",
+        selectedDate: selectedDate,
+        dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek]
+      });
+    }
+    
+    // Validate business hours (9 AM - 6 PM)
+    if (hour < 9 || hour >= 18) {
+      return res.status(400).json({
+        error: "Meetings can only be scheduled between 9:00 AM and 6:00 PM (Noida time)",
+        selectedTime: selectedTime,
+        hour: hour,
+        businessHours: "9:00 AM - 6:00 PM (Asia/Kolkata timezone)"
+      });
+    }
+    
+    console.log('Business hours validation passed:', {
+      selectedDate,
+      selectedTime,
+      dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek],
+      hour: hour,
+      timezone: noidaTimezone
+    });
+
+    // Convert date and time to ISO format with proper timezone handling
+    console.log('Converting date and time:', { selectedDate, selectedTime });
     console.log('Converted time to 24-hour format:', time24h);
     
-    const startDateTime = new Date(`${selectedDate}T${time24h}:00`);
+    // Create date in Noida timezone and convert to UTC for Teams API
+    // Parse the date and time components
+    const year = parseInt(selectedDate.split('-')[0]);
+    const month = parseInt(selectedDate.split('-')[1]) - 1; // JavaScript months are 0-based
+    const day = parseInt(selectedDate.split('-')[2]);
+    const [hours, minutes] = time24h.split(':').map(Number);
+    
+    // Create date in Noida timezone (UTC+5:30) using ISO string with timezone offset
+    const noidaDateTime = new Date(`${selectedDate}T${time24h}:00+05:30`);
+    console.log('Noida DateTime:', noidaDateTime);
+    console.log('Noida DateTime ISO:', noidaDateTime.toISOString());
+    
+    // The date is already in UTC when created with timezone offset, so use it directly
+    const startDateTime = noidaDateTime;
     const endDateTime = new Date(startDateTime.getTime() + 30 * 60000); // 30 minutes later
     
     console.log('Calculated times:', {
@@ -1031,6 +1263,9 @@ app.post("/api/schedule-discovery-call", async (req, res) => {
         meetingData.organizerEmail
       );
       console.log('Teams meeting created successfully:', meeting);
+      
+      // Add the booked slot to our tracking system
+      await addBookedSlot(selectedDate, time24h);
     } catch (error) {
       console.error('Error creating Teams meeting:', error);
       return res.status(500).json({
@@ -1040,16 +1275,29 @@ app.post("/api/schedule-discovery-call", async (req, res) => {
       });
     }
 
+    // Convert time to 12-hour format for user-friendly email display
+    function formatTimeForEmail(time24h) {
+      const [hours, minutes] = time24h.split(':');
+      const hour12 = parseInt(hours) % 12 || 12;
+      const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM';
+      return `${hour12}:${minutes} ${ampm}`;
+    }
+    
     // Send custom email notifications to all attendees and userDetails
     let emailResults = [];
     
+    // Prepare email data (use the exact same date and time that was booked)
+    const emailDate = selectedDate; // Use the original selectedDate format
+    const emailTime = formatTimeForEmail(time24h); // Convert to 12-hour format for email
+    
     // Send to userDetails
     try {
+      
       const emailData = {
         subject: "Discovery Call - Thrive",
-        date: selectedDate,
-        time: selectedTime,
-        timezone: 'Asia/Calcutta (GMT+5:30)',
+        date: emailDate,
+        time: emailTime,
+        timezone: 'Asia/Kolkata (GMT+5:30)',
         duration: '30 minutes',
         meetingLink: meeting.joinUrl || meeting.onlineMeeting?.joinUrl || meeting.onlineMeetingUrl
       };
@@ -1077,8 +1325,8 @@ app.post("/api/schedule-discovery-call", async (req, res) => {
       const attendeeEmailData = {
         subject: "Discovery Call - Thrive",
         date: selectedDate,
-        time: selectedTime,
-        timezone: 'Asia/Calcutta (GMT+5:30)',
+        time: formatTimeForEmail(time24h), // Convert to 12-hour format for email
+        timezone: 'Asia/Kolkata (GMT+5:30)',
         duration: '30 minutes',
         meetingLink: meeting.joinUrl || meeting.onlineMeeting?.joinUrl || meeting.onlineMeetingUrl
       };
@@ -1096,9 +1344,9 @@ app.post("/api/schedule-discovery-call", async (req, res) => {
     try {
       const organizerNotificationData = {
         subject: "New Discovery Call Booked",
-        date: selectedDate,
-        time: selectedTime,
-        timezone: 'Asia/Calcutta (GMT+5:30)',
+        date: emailDate,
+        time: emailTime, // Already converted to 12-hour format above
+        timezone: 'Asia/Kolkata (GMT+5:30)',
         duration: '30 minutes',
         meetingLink: meeting.joinUrl || meeting.onlineMeeting?.joinUrl || meeting.onlineMeetingUrl,
         userDetails: userDetails,
@@ -1119,9 +1367,9 @@ app.post("/api/schedule-discovery-call", async (req, res) => {
       try {
         const adminNotificationData = {
           subject: "New Discovery Call Booked",
-          date: selectedDate,
-          time: selectedTime,
-          timezone: 'Asia/Calcutta (GMT+5:30)',
+          date: emailDate,
+          time: emailTime, // Already converted to 12-hour format above
+          timezone: 'Asia/Kolkata (GMT+5:30)',
           duration: '30 minutes',
           meetingLink: meeting.joinUrl || meeting.onlineMeeting?.joinUrl || meeting.onlineMeetingUrl,
           userDetails: userDetails,
@@ -1161,17 +1409,187 @@ app.post("/api/schedule-discovery-call", async (req, res) => {
   }
 });
 
-// Check availability endpoint
+// Get available time slots for a specific date
+app.get("/api/available-slots", async (req, res) => {
+  try {
+    const { date } = req.query;
+    
+    if (!date) {
+      return res.status(400).json({
+        error: "Missing required parameter",
+        required: ["date"],
+        example: "/api/available-slots?date=2025-09-09"
+      });
+    }
+    
+    const noidaTimezone = 'Asia/Kolkata';
+    const selectedDate = new Date(`${date}T00:00:00`);
+    
+    // Convert to Noida timezone
+    const noidaDate = new Date(selectedDate.toLocaleString("en-US", {timeZone: noidaTimezone}));
+    const dayOfWeek = noidaDate.getDay();
+    
+    // Check if it's a weekday
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return res.json({
+        date,
+        timezone: noidaTimezone,
+        dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek],
+        available: false,
+        message: "Meetings can only be scheduled on weekdays (Monday-Friday)",
+        slots: []
+      });
+    }
+    
+    // Generate all possible time slots (9 AM to 5:30 PM, 30-minute intervals)
+    const timeSlots = [];
+    const now = new Date();
+    
+    for (let hour = 9; hour < 18; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const slotDateTime = new Date(`${date}T${slotTime}:00`);
+        
+        // Check if slot is in the past
+        const isPast = slotDateTime <= now;
+        
+        // Check if slot is already booked
+        const isBooked = await isSlotBooked(date, slotTime);
+        
+        // Slot is available if it's not in the past and not booked
+        const isAvailable = !isPast && !isBooked;
+        
+        // Convert to 12-hour format for display
+        const displayTime = slotDateTime.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: noidaTimezone
+        });
+        
+        // Determine reason for availability status
+        let reason = 'Available';
+        if (isPast) {
+          reason = 'Past time slot';
+        } else if (isBooked) {
+          reason = 'Already booked';
+        }
+        
+        timeSlots.push({
+          time: slotTime,
+          displayTime: displayTime,
+          available: isAvailable,
+          reason: reason
+        });
+      }
+    }
+    
+    res.json({
+      date,
+      timezone: noidaTimezone,
+      dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek],
+      businessHours: "9:00 AM - 6:00 PM (Monday-Friday)",
+      totalSlots: timeSlots.length,
+      availableSlots: timeSlots.filter(slot => slot.available).length,
+      slots: timeSlots
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Check availability endpoint with business hours validation
 app.get("/api/check-availability", async (req, res) => {
   try {
     const { date, time } = req.query;
     
-    // For now, return available (you can implement calendar checking logic here)
+    if (!date || !time) {
+      return res.status(400).json({
+        error: "Missing required parameters",
+        required: ["date", "time"],
+        example: "/api/check-availability?date=2025-09-09&time=14:00"
+      });
+    }
+    
+    // Business hours validation (9 AM - 6 PM, Monday-Friday, Noida timezone)
+    const noidaTimezone = 'Asia/Kolkata';
+    
+    // Convert time format to 24-hour format (supports both 12-hour and 24-hour input)
+    function convertTo24Hour(timeInput) {
+      // Check if it's already in 24-hour format (no AM/PM and hour >= 13)
+      if (!timeInput.includes('AM') && !timeInput.includes('PM')) {
+        // It's 24-hour format, return as is
+        return timeInput;
+      }
+      
+      // It's 12-hour format, convert to 24-hour
+      const [time, modifier] = timeInput.split(' ');
+      let [hours, minutes] = time.split(':');
+      
+      if (hours === '12') {
+        hours = '00';
+      }
+      
+      if (modifier === 'PM') {
+        hours = parseInt(hours, 10) + 12;
+      }
+      
+      // Convert hours to string and pad with leading zero if needed
+      const hoursStr = hours.toString().padStart(2, '0');
+      return `${hoursStr}:${minutes}`;
+    }
+    
+    const time24h = convertTo24Hour(time);
+    const selectedDateTime = new Date(`${date}T${time24h}:00`);
+    
+    // For day validation, we only need the date part (not time)
+    const dateOnly = new Date(`${date}T00:00:00`);
+    const dayOfWeek = dateOnly.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    // For hour validation, we need the actual time
+    const hour = selectedDateTime.getHours();
+    
+    // Check if it's a weekday
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+    
+    // Check if it's within business hours
+    const isBusinessHours = hour >= 9 && hour < 18;
+    
+    // Check if it's not in the past
+    const now = new Date();
+    const isFuture = selectedDateTime > now;
+    
+    // Check if slot is already booked
+    const isBooked = await isSlotBooked(date, time24h);
+    
+    const available = isWeekday && isBusinessHours && isFuture && !isBooked;
+    
+    let message = '';
+    if (!isWeekday) {
+      message = 'Meetings can only be scheduled on weekdays (Monday-Friday)';
+    } else if (!isBusinessHours) {
+      message = 'Meetings can only be scheduled between 9:00 AM and 6:00 PM (Noida time)';
+    } else if (!isFuture) {
+      message = 'Cannot schedule meetings in the past';
+    } else if (isBooked) {
+      message = 'This time slot is already booked';
+    } else {
+      message = 'Time slot is available';
+    }
+    
     res.json({ 
-      available: true, 
-      message: 'Time slot is available',
+      available,
+      message,
       date,
-      time
+      time,
+      timezone: noidaTimezone,
+      businessHours: "9:00 AM - 6:00 PM (Monday-Friday)",
+      dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek],
+      hour: hour,
+      isWeekday,
+      isBusinessHours,
+      isFuture
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1194,12 +1612,15 @@ app.use((req, res) => {
 // -------------------
 // 7. Start Server
 // -------------------
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`🚀 Thrive Teams Meeting API running at http://localhost:${PORT}`);
   console.log(`📧 Health check: http://localhost:${PORT}/`);
   console.log(`📅 Create meeting: POST http://localhost:${PORT}/api/create-meeting`);
   console.log(`🎯 Schedule discovery call: POST http://localhost:${PORT}/api/schedule-discovery-call`);
   console.log(`✅ Server is now listening on port ${PORT}`);
+  
+  // Connect to MongoDB
+  await connectToMongoDB();
 });
 
 // Handle server errors
